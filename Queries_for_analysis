@@ -1,0 +1,163 @@
+# ----------------------------------------
+# Appearance of the concepts in our texts
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tvd_ontology: <http://www.trivadis.com/kg/ontology/>
+PREFIX dctype: <http://purl.org/dc/dcmitype/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+
+SELECT ?label_en ?num_mentions ?concept
+# select the concept its english label and how often we have hit that in our text
+WHERE {
+	{
+	SERVICE <https://query.wikidata.org/bigdata/namespace/wdq/sparql>
+    {
+        ?concept rdfs:label ?label_en .
+        FILTER(lang(?label_en) = 'en') .
+    }
+    }
+    
+    
+    
+
+{{SELECT ?concept (COUNT(?text) as ?num_mentions)
+# what want the top concepts counted by their mentions in texts
+WHERE { 
+    
+    # we go from the text to its mentions to the related concepts
+	?text rdf:type dctype:Text .
+    ?text tvd_ontology:hasMention ?mention .
+    ?mention tvd_ontology:hasConcept ?concept .
+    ?concept rdf:type tvd_ontology:Concept .
+} 
+GROUP BY ?concept
+ORDER BY DESC(?num_mentions)
+            LIMIT 100
+    } 
+    
+}
+    
+}
+ORDER BY DESC(?num_mentions)
+
+
+# ----------------------------------------
+# Co-Occurence_of_concepts
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tvd_ontology: <http://www.trivadis.com/kg/ontology/>
+PREFIX dctype: <http://purl.org/dc/dcmitype/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+
+SELECT ?concept ?text ?concept2
+# co_occurence of the individual datasets
+WHERE {
+    # we go from the text to its mentions to the related concepts
+	?text rdf:type dctype:Text .
+    ?text tvd_ontology:hasMention ?mention .
+    ?mention tvd_ontology:hasConcept ?concept .
+    ?concept rdf:type tvd_ontology:Concept .
+                
+    ?text tvd_ontology:hasMention ?mention2 .
+	?mention2 tvd_ontology:hasConcept ?concept2 .
+    ?concept2 rdf:type tvd_ontology:Concept .
+    
+                
+    FILTER (?concept != ?concept2).
+}
+
+
+# ----------------------------------------
+# Occurence of a concept in a text
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tvd_ontology: <http://www.trivadis.com/kg/ontology/>
+PREFIX dctype: <http://purl.org/dc/dcmitype/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+
+SELECT ?concept ?text
+# co_occurence of the individual datasets
+WHERE {
+    # we go from the text to its mentions to the related concepts
+    ?text rdf:type dctype:Text .
+    ?text tvd_ontology:hasMention ?mention .
+    ?mention tvd_ontology:hasConcept ?concept .
+    ?concept rdf:type tvd_ontology:Concept .
+}
+
+# ----------------------------------------
+# get the texts to an id
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tvd_ontology: <http://www.trivadis.com/kg/ontology/>
+PREFIX dctype: <http://purl.org/dc/dcmitype/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns2: <http://purl.org/dc/terms/>
+SELECT ?text_iri ?description
+WHERE {
+	?text_iri rdf:type dctype:Text .
+    ?text_iri ns2:description ?description.
+		}
+
+
+# ----------------------------------------
+# What do we know about materials?
+
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tvd_ontology: <http://www.trivadis.com/kg/ontology/>
+PREFIX dctype: <http://purl.org/dc/dcmitype/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT (COUNT(DISTINCT ?text) as ?num_material_texts)
+# co_occurence of the individual datasets
+WHERE {
+    # we go from the text to its mentions to the related concepts
+	?text rdf:type dctype:Text .
+    ?text tvd_ontology:hasMention ?mention .
+    ?mention tvd_ontology:hasConcept ?concept .
+    ?concept rdf:type tvd_ontology:Concept .
+    
+    # one mention inside has to lead to a material like, copper Q753 , plastic Q11474 or metal Q11426
+    ?text tvd_ontology:hasMention ?product_mention .
+    ?product_mention tvd_ontology:hasConcept ?product_concept .
+    FILTER(?product_concept in (wd:Q753, wd:Q11474, wd:Q11426))
+    
+}
+
+# ----------------------------------------
+# What facts do we know that are related to materials
+
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX tvd_ontology: <http://www.trivadis.com/kg/ontology/>
+PREFIX dctype: <http://purl.org/dc/dcmitype/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?text ?subject_text ?relation_text ?object_text
+# co_occurence of the individual datasets
+WHERE {
+    # BIND (<http://www.trivadis.com/kg/7528727624894058229> as ?text)
+    # we go from the text to its mentions to the related concepts
+	?text rdf:type dctype:Text .
+    #?text tvd_ontology:hasMention ?mention .
+    #?mention tvd_ontology:hasConcept ?concept .
+    #?concept rdf:type tvd_ontology:Concept .
+    
+    # one mention inside has to lead to a material like, copper Q753 , plastic Q11474 or metal Q11426, Zinc Q758 (Do not miss Glass, PVC, Brass, )
+    ?text tvd_ontology:hasMention ?product_mention .
+    ?product_mention tvd_ontology:hasConcept ?product_concept .
+    FILTER(?product_concept in (wd:Q753, wd:Q11474, wd:Q11426, wd:Q758)) .
+    
+    # get the facts fromt hese concepts
+    ?text tvd_ontology:hasFact ?fact .
+    ?fact tvd_ontology:hasSubject ?subject .
+    ?subject tvd_ontology:hasText ?subject_text .
+    ?fact tvd_ontology:hasRelation ?relation .
+    ?relation tvd_ontology:hasText ?relation_text .
+    ?fact tvd_ontology:hasObject ?object.
+    ?object tvd_ontology:hasText ?object_text .
+    
+    # filter on some keywords: destroyed, suggested, obeserved, resulted, did have (we need also similars like "was")
+    FILTER(str(?relation_text) in ("destroyed", "suggested", "obeserved", "resulted", "did have", "was"))
+
+}
