@@ -126,27 +126,29 @@ WHERE {
 
 # ----------------------------------------
 # What facts do we know that are related to materials
-
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX tvd_ontology: <http://www.trivadis.com/kg/ontology/>
 PREFIX dctype: <http://purl.org/dc/dcmitype/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT DISTINCT ?text ?subject_text ?relation_text ?object_text
+PREFIX ns2: <http://purl.org/dc/terms/>
+SELECT DISTINCT ?text ?doi ?subject_text ?relation_text ?object_text
 # co_occurence of the individual datasets
 WHERE {
     # BIND (<http://www.trivadis.com/kg/7528727624894058229> as ?text)
     # we go from the text to its mentions to the related concepts
 	?text rdf:type dctype:Text .
+    ?text ns2:identifier ?doi .
+
     #?text tvd_ontology:hasMention ?mention .
     #?mention tvd_ontology:hasConcept ?concept .
     #?concept rdf:type tvd_ontology:Concept .
     
-    # one mention inside has to lead to a material like, copper Q753 , plastic Q11474 or metal Q11426, Zinc Q758 (Do not miss Glass, PVC, Brass, )
+    # one mention inside has to lead to a material like, copper Q753 , plastic Q11474 or metal Q11426, Zinc Q758 (Do not miss Glass Q11469, PVC, Brass, )
     ?text tvd_ontology:hasMention ?product_mention .
     ?product_mention tvd_ontology:hasConcept ?product_concept .
-    FILTER(?product_concept in (wd:Q753, wd:Q11474, wd:Q11426, wd:Q758)) .
+    FILTER(?product_concept in (wd:Q753, wd:Q11474, wd:Q11426, wd:Q758, wd:Q11469, wd:Q146368, wd:Q146368)) .
     
     # get the facts fromt hese concepts
     ?text tvd_ontology:hasFact ?fact .
@@ -158,6 +160,6 @@ WHERE {
     ?object tvd_ontology:hasText ?object_text .
     
     # filter on some keywords: destroyed, suggested, obeserved, resulted, did have (we need also similars like "was")
-    FILTER(str(?relation_text) in ("destroyed", "suggested", "obeserved", "resulted", "did have", "was"))
+    FILTER(str(?relation_text) in ("destroyed", "suggested", "observed", "resulted", "did have", "was"))
 
 }
